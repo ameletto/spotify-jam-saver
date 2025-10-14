@@ -4,41 +4,61 @@ import { Session } from "next-auth";
 import { useState } from "react";
 import axios from "axios";
 
-export default function Index(props: { session: Session }) {
-  console.log("props:", props);
-  const [data, setData] = useState(null);
+interface SpotifyTrack {
+  name: string;
+  artists: { name: string }[];
+  album: { name: string };
+}
+
+interface SpotifyRecentlyPlayedItem {
+  track: SpotifyTrack;
+  played_at: string;
+}
+
+interface SpotifyRecentlyPlayedResponse {
+  items: SpotifyRecentlyPlayedItem[];
+}
+
+export default function Index({session}: { session: Session }) {
+  const [tracks, setTracks] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchRecentTracks = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
+      const response = await axios.get<SpotifyRecentlyPlayedResponse>(
         'https://api.spotify.com/v1/me/player/recently-played',
         {
           headers: {
-            'Authorization': `Bearer ${props.session.accessToken}`
+            'Authorization': `Bearer ${session.accessToken}`
           }
         }
       );
-      console.log("Recent tracks:", response.data);
-      setData(response.data);
+
+      const songNames = response.data.items.map(item => item.track.name);
+      
+      console.log("Song names:", songNames);
+      setTracks(songNames);
     } catch (error) {
       console.error("Error:", error);
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <>
       <div style={{ maxWidth: '400px' }}>
         <button onClick={() => signOut()}>Sign out</button>
         <button onClick={fetchRecentTracks} disabled={loading}>{loading ? 'Loading...' : 'Get Recent Tracks'}</button>
         
-        {data && (
-          <pre style={{ fontSize: '12px' }}>
-            {JSON.stringify(data, null, 2)}
-          </pre>
-        )}
+        {tracks.length > 0 && (
+        <ul>
+          {tracks.map((name, index) => (
+            <li key={index}>{name}</li>
+          ))}
+        </ul>
+      )}
       </div>
     </>
   );
@@ -51,6 +71,13 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   return { props: { session: session } };
 }
+
+
+
+
+
+
+
 
 
 // import Script from 'next/script';
