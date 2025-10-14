@@ -1,27 +1,55 @@
 import { GetServerSidePropsContext } from "next";
-import { getSession } from "next-auth/react";
-import {signOut} from "next-auth/react";
-import React from 'react';
+import { getSession, signOut } from "next-auth/react";
 import { Session } from "next-auth";
+import { useState } from "react";
+import axios from "axios";
 
 export default function Index(props: { session: Session }) {
-  console.log(props.session.accessToken);
+  console.log("props:", props);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchRecentTracks = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        'https://api.spotify.com/v1/me/player/recently-played',
+        {
+          headers: {
+            'Authorization': `Bearer ${props.session.accessToken}`
+          }
+        }
+      );
+      console.log("Recent tracks:", response.data);
+      setData(response.data);
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <>
-        <div style={{ maxWidth: '400px' }}>
+      <div style={{ maxWidth: '400px' }}>
         <button onClick={() => signOut()}>Sign out</button>
-        </div>
+        <button onClick={fetchRecentTracks} disabled={loading}>{loading ? 'Loading...' : 'Get Recent Tracks'}</button>
         
-  </>
-  )
+        {data && (
+          <pre style={{ fontSize: '12px' }}>
+            {JSON.stringify(data, null, 2)}
+          </pre>
+        )}
+      </div>
+    </>
+  );
 }
 
-export async function getServerSideProps(context:GetServerSidePropsContext) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const session = await getSession(context);
-  
-  if (!session) return {redirect: {permanent: false, destination: "/signin" }};
 
-  return {props: {session: session}}
+  if (!session) return { redirect: { permanent: false, destination: "/signin" } };
+
+  return { props: { session: session } };
 }
 
 
