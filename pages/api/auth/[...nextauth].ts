@@ -20,7 +20,7 @@ export default NextAuth({
             clientSecret: process.env.SPOTIFY_CLIENT_SECRET as string,
             authorization: {
                 params: {
-                    scope: 'user-read-recently-played'
+                    scope: 'user-read-playback-state user-read-playback-state'
                 }
             }})
     ],

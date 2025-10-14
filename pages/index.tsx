@@ -10,35 +10,40 @@ interface SpotifyTrack {
   album: { name: string };
 }
 
-interface SpotifyRecentlyPlayedItem {
-  track: SpotifyTrack;
-  played_at: string;
+interface SpotifyQueueResponse {
+  currently_playing: SpotifyTrack;
+  queue: SpotifyTrack[];
 }
 
-interface SpotifyRecentlyPlayedResponse {
-  items: SpotifyRecentlyPlayedItem[];
-}
-
-export default function Index({session}: { session: Session }) {
-  const [tracks, setTracks] = useState<string[]>([]);
+export default function Index({ session }: { session: Session }) {
+  const [currentTrack, setCurrentTrack] = useState<string>("");
+  const [queueTracks, setQueueTracks] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchRecentTracks = async () => {
+    const fetchQueue = async () => {
     setLoading(true);
     try {
-      const response = await axios.get<SpotifyRecentlyPlayedResponse>(
-        'https://api.spotify.com/v1/me/player/recently-played',
+      const response = await axios.get<SpotifyQueueResponse>(
+        'https://api.spotify.com/v1/me/player/queue',
         {
           headers: {
             'Authorization': `Bearer ${session.accessToken}`
           }
         }
       );
-
-      const songNames = response.data.items.map(item => item.track.name);
       
-      console.log("Song names:", songNames);
-      setTracks(songNames);
+      console.log("Queue data:", response.data);
+      
+      // Get currently playing track
+      const current = response.data.currently_playing?.name || "Nothing playing";
+      setCurrentTrack(current);
+      
+      // Get queue track names
+      const queueNames = response.data.queue.map(track => track.name);
+      setQueueTracks(queueNames);
+      
+      console.log("Current:", current);
+      console.log("Queue:", queueNames);
     } catch (error) {
       console.error("Error:", error);
     } finally {
@@ -50,14 +55,22 @@ export default function Index({session}: { session: Session }) {
     <>
       <div style={{ maxWidth: '400px' }}>
         <button onClick={() => signOut()}>Sign out</button>
-        <button onClick={fetchRecentTracks} disabled={loading}>{loading ? 'Loading...' : 'Get Recent Tracks'}</button>
-        
-        {tracks.length > 0 && (
-        <ul>
-          {tracks.map((name, index) => (
-            <li key={index}>{name}</li>
-          ))}
-        </ul>
+        <button onClick={fetchQueue} disabled={loading}>{loading ? 'Loading...' : 'Get Recent Queue'}</button>
+        {currentTrack && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>Currently Playing:</h3>
+          <p style={{ fontWeight: 'bold', color: 'green' }}>{currentTrack}</p>
+        </div>
+      )}
+        {queueTracks.length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>Up Next ({queueTracks.length} songs):</h3>
+          <ol>
+            {queueTracks.map((name, index) => (
+              <li key={index}>{name}</li>
+            ))}
+          </ol>
+        </div>
       )}
       </div>
     </>
