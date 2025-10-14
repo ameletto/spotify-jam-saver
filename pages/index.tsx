@@ -1,5 +1,6 @@
 import { GetServerSidePropsContext } from "next";
-import { getSession, signIn } from "next-auth/react";
+import { getSession } from "next-auth/react";
+import {signOut} from "next-auth/react";
 
 export default function Index(props:{
     session:{
@@ -15,8 +16,8 @@ export default function Index(props:{
     <>
       <p>name: {props.session.user.name}</p>
       <p>email: {props.session.user.email}</p>
-      <img src={props.session.user.image}
-      alt="Profile picture" />
+      <img src={props.session.user.image} alt="Profile picture" />
+      <button onClick={() => signOut()}>Sign out</button>
   </>
   )
 }
